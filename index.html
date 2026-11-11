@@ -3,12 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>吞食天地 · 地图阅读器</title>
+    <title>地图阅读器</title>
     <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
     <main class="app">
         <div class="viewport" id="viewport"></div>
+
+        <div class="mapbar">
+            <label class="mapbar__label" for="map-select">地图</label>
+            <div class="mapbar__field">
+                <select id="map-select" class="mapbar__select" aria-label="选择地图"></select>
+            </div>
+        </div>
 
         <div class="loading" id="loading">
             <div class="loading__spinner" aria-hidden="true"></div>

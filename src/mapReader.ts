@@ -38,6 +38,7 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
  * 绝不从 style 字符串里反解析数值。
  *
  * 派发的事件（都冒泡）：
+ * - `mapload`   开始加载/切换地图，detail 为 { source }
  * - `mapready`  图片加载完成、首帧视图已就绪
  * - `mapchange` 视图发生变化，detail 为 { x, y, scale }
  * - `maperror`  图片加载失败，detail 为 { source }
@@ -55,6 +56,7 @@ export class MapReader {
     #naturalWidth = 0
     #naturalHeight = 0
     #loaded = false
+    #source = ''
 
     #pointerId: number | null = null
     #dragging = false
@@ -107,11 +109,44 @@ export class MapReader {
         ].join(';')
         this.element.appendChild(this.#image)
 
-        this.#image.addEventListener('load', this.#onImageLoad, { once: true })
-        this.#image.addEventListener('error', this.#onImageError, { once: true })
+        this.#image.addEventListener('load', this.#onImageLoad)
+        this.#image.addEventListener('error', this.#onImageError)
         this.#bindEvents()
         this.#apply()
         this.#observeResize()
+
+        this.load(source)
+    }
+
+    // ---------------------------------------------------------------- 对外 API
+
+    /** 当前地图地址 */
+    get source() {
+        return this.#source
+    }
+
+    /** 切换地图（同一个实例复用，会自动重新 fit） */
+    load(source: string) {
+        if (!source || source === this.#source) return
+
+        this.#source = source
+        this.#loaded = false
+        this.#naturalWidth = 0
+        this.#naturalHeight = 0
+        this.#scale = 1
+        this.#x = 0
+        this.#y = 0
+        this.element.dataset.ready = 'false'
+        delete this.element.dataset.error
+        // 清掉上一张图的布局尺寸，避免加载期间按旧尺寸参与计算
+        this.#image.style.width = ''
+        this.#image.style.height = ''
+        this.#apply()
+
+        this.element.dispatchEvent(new CustomEvent('mapload', {
+            bubbles: true,
+            detail: { source },
+        }))
 
         this.#image.src = source
         // 命中缓存时 load 事件可能已经错过，这里补一次
@@ -119,8 +154,6 @@ export class MapReader {
             queueMicrotask(this.#onImageLoad)
         }
     }
-
-    // ---------------------------------------------------------------- 对外 API
 
     /** 当前缩放倍数 */
     get scale() {

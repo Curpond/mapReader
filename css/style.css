@@ -95,11 +95,88 @@ body {
     }
 }
 
+/* ------------------------------------------------------------ 地图选择 */
+
+.mapbar {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--panel);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    z-index: 6;
+}
+
+.mapbar__label {
+    color: var(--text-dim);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+}
+
+.mapbar__field {
+    position: relative;
+}
+
+.mapbar__field::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    width: 6px;
+    height: 6px;
+    margin-top: -4px;
+    border-right: 1.5px solid var(--text-dim);
+    border-bottom: 1.5px solid var(--text-dim);
+    transform: rotate(45deg);
+    pointer-events: none;
+}
+
+.mapbar__select {
+    appearance: none;
+    min-width: 132px;
+    max-width: 320px;
+    height: 30px;
+    padding: 0 28px 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    text-overflow: ellipsis;
+}
+
+.mapbar__select:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.mapbar__select:focus-visible {
+    outline: 2px solid #4c8dff;
+    outline-offset: 1px;
+}
+
+.mapbar__select option {
+    background: #23262b;
+    color: var(--text);
+}
+
+.mapbar__select:disabled {
+    color: var(--text-dim);
+    cursor: default;
+}
+
 /* ------------------------------------------------------------ 操作提示 */
 
 .hint {
     position: absolute;
-    top: 16px;
+    bottom: 16px;
     left: 16px;
     padding: 6px 12px;
     border-radius: 8px;
