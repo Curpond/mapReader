@@ -1,16 +1,17 @@
 {
   "name": "map-reader",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "可拖动、可缩放的超大图片地图查看器",
   "type": "module",
   "scripts": {
     "maps": "node scripts/gen-maps.mjs",
+    "start": "node scripts/start.mjs",
+    "serve": "node scripts/serve.mjs",
+    "stop": "node scripts/stop.mjs",
     "prebuild": "node scripts/gen-maps.mjs",
     "build": "tsc -p tsconfig.json",
-    "watch": "tsc -p tsconfig.json --watch",
-    "prestart": "node scripts/gen-maps.mjs",
-    "start": "node scripts/serve.mjs"
+    "watch": "tsc -p tsconfig.json --watch"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
