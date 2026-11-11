@@ -1,0 +1,15 @@
+{
+  "name": "map-reader",
+  "version": "1.0.0",
+  "private": true,
+  "description": "可拖动、可缩放的超大图片地图查看器",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch",
+    "start": "node scripts/serve.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

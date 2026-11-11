@@ -1,13 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>吞食天地 · 地图阅读器</title>
     <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-    <div class="test" id="test"></div>
+    <main class="app">
+        <div class="viewport" id="viewport"></div>
+
+        <div class="loading" id="loading">
+            <div class="loading__spinner" aria-hidden="true"></div>
+            <p class="loading__text">正在加载地图…</p>
+        </div>
+
+        <div class="hint" id="hint">滚轮 / 双击缩放　·　拖动平移　·　0 键恢复全图</div>
+
+        <div class="toolbar">
+            <button id="zoom-out" type="button" title="缩小（-）" aria-label="缩小">−</button>
+            <span class="toolbar__zoom" id="zoom-label">--</span>
+            <button id="zoom-in" type="button" title="放大（+）" aria-label="放大">+</button>
+            <button id="zoom-fit" type="button" title="适应窗口（0）" aria-label="适应窗口">全图</button>
+        </div>
+    </main>
+
     <script type="module" src="./dist/main.js"></script>
 </body>
 </html>
