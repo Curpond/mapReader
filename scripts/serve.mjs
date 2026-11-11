@@ -53,6 +53,11 @@ const sanitizeMarkers = (payload) => {
         if (typeof file !== 'string' || !Array.isArray(markers)) throw new Error(`地图 ${file} 的数据不正确`)
         maps[file] = markers.map((marker) => {
             const num = (value, fallback = 0) => (Number.isFinite(Number(value)) ? Number(value) : fallback)
+            // 子地图只能是 maps/ 下的相对路径，不允许跳出目录
+            const submap = String(marker?.submap ?? '')
+                .replace(/\\/g, '/')
+                .replace(/^\/+/, '')
+            const safeSubmap = submap.split('/').includes('..') ? '' : submap
             return {
                 id: String(marker?.id ?? ''),
                 x: num(marker?.x),
@@ -62,6 +67,7 @@ const sanitizeMarkers = (payload) => {
                 color: String(marker?.color ?? '#ffd166'),
                 minScale: num(marker?.minScale),
                 markdown: String(marker?.markdown ?? ''),
+                submap: safeSubmap,
             }
         })
     }

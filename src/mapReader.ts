@@ -363,6 +363,16 @@ export class MapReader {
         this.#apply()
     }
 
+    /** 直接还原一个完整视图（用于「返回上一层」时恢复原来的缩放和位置） */
+    setView(view: { x: number; y: number; scale: number }) {
+        if (!this.#loaded) return
+        this.#scale = this.#clampScale(view.scale)
+        this.#x = view.x
+        this.#y = view.y
+        this.#constrain()
+        this.#apply()
+    }
+
     // ------------------------------------------------------------ 事件回调
 
     #onWheel = (e: WheelEvent) => {

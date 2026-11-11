@@ -31,6 +31,8 @@ export class MarkerLayer {
     onCreate?: (x: number, y: number) => void
     onDeselect?: () => void
     onMove?: (marker: MapMarker) => void
+    /** 右键：marker 为 null 表示点在地图空白处 */
+    onContextMenu?: (marker: MapMarker | null, clientX: number, clientY: number) => void
 
     constructor(map: MapReader) {
         this.#map = map
@@ -52,6 +54,7 @@ export class MarkerLayer {
         map.element.addEventListener('mapchange', this.#onViewChange)
         map.element.addEventListener('pointerdown', this.#onMapPointerDown)
         map.element.addEventListener('click', this.#onMapClick)
+        map.element.addEventListener('contextmenu', this.#onMapContextMenu)
         this.sync()
     }
 
@@ -155,6 +158,11 @@ export class MarkerLayer {
                 }
                 this.onActivate?.(marker)
             })
+            node.addEventListener('contextmenu', (e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                this.onContextMenu?.(marker, e.clientX, e.clientY)
+            })
 
             this.#nodes.set(marker.id, node)
             fragment.appendChild(node)
@@ -187,6 +195,11 @@ export class MarkerLayer {
 
     #onMapPointerDown = (e: PointerEvent) => {
         this.#downAt = { x: e.clientX, y: e.clientY }
+    }
+
+    #onMapContextMenu = (e: MouseEvent) => {
+        e.preventDefault()
+        this.onContextMenu?.(null, e.clientX, e.clientY)
     }
 
     #onMapClick = (e: MouseEvent) => {

@@ -20,6 +20,8 @@ export interface MapMarker {
     minScale: number
     /** 信息面板内容（Markdown） */
     markdown: string
+    /** 子地图：相对 maps/ 的路径，例如 sub/山洞.png；空字符串表示没有 */
+    submap: string
 }
 
 export interface MarkersFile {
@@ -57,8 +59,17 @@ export const createMarker = (x: number, y: number, patch: Partial<MapMarker> = {
     color: DEFAULT_MARKER_COLOR,
     minScale: 0,
     markdown: '',
+    submap: '',
     ...patch,
 })
+
+/** 规范化子地图路径：统一正斜杠、去掉前导斜杠、禁止跳出 maps/ */
+export const normalizeSubmap = (value: unknown): string => {
+    const raw = String(value ?? '').replace(/\\/g, '/').replace(/^\/+/, '').trim()
+    if (!raw) return ''
+    if (raw.split('/').some((segment) => segment === '..')) return ''
+    return raw
+}
 
 /** 兼容手工改坏的字段：读进来一律走一遍规范化 */
 const normalizeMarker = (raw: Partial<MapMarker> | null | undefined, index: number): MapMarker => ({
@@ -70,6 +81,7 @@ const normalizeMarker = (raw: Partial<MapMarker> | null | undefined, index: numb
     color: typeof raw?.color === 'string' && /^#[0-9a-f]{3,8}$/i.test(raw.color) ? raw.color : DEFAULT_MARKER_COLOR,
     minScale: Math.max(0, Number(raw?.minScale) || 0),
     markdown: typeof raw?.markdown === 'string' ? raw.markdown : '',
+    submap: normalizeSubmap(raw?.submap),
 })
 
 export class MarkerStore {

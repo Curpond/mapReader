@@ -3,6 +3,7 @@
  * 只负责显示和收集输入，数据由 main.ts 统一管理。
  */
 import { markdownToPlain, renderMarkdown } from './markdown.js'
+import { nameOfKey, type MapNode } from './mapViewport.js'
 import type { MapMarker, SaveState } from './markerStore.js'
 
 export interface MarkerPanelHandlers {
@@ -12,6 +13,10 @@ export interface MarkerPanelHandlers {
     onClose: () => void
     onSelect: (id: string) => void
     onExport: () => void
+    /** 进入子地图（主视图下钻） */
+    onEnter: () => void
+    /** 在浮窗中预览子地图 */
+    onPreview: () => void
 }
 
 export interface EditorContext {
@@ -19,6 +24,8 @@ export interface EditorContext {
     fitScale: number
     markers: MapMarker[]
     selectedId: string | null
+    /** 可供选择的子地图 */
+    submaps: MapNode[]
 }
 
 const COLOR_PRESETS = ['#ffd166', '#ff6b6b', '#4ecdc4', '#a78bfa', '#f78fb3', '#ffffff']
@@ -40,11 +47,16 @@ export class MarkerPanel {
     #info: HTMLElement
     #status: HTMLElement
     #list: HTMLElement
-    #footActions: HTMLElement
+    #count: HTMLElement
+    #actionsView: HTMLElement
+    #actionsEdit: HTMLElement
+    #enterButton: HTMLButtonElement
+    #previewButton: HTMLButtonElement
     #titleInput: HTMLInputElement
     #colorInput: HTMLInputElement
     #minScaleInput: HTMLInputElement
     #markdownInput: HTMLTextAreaElement
+    #submapSelect: HTMLSelectElement
     #typeButtons: HTMLButtonElement[]
     #presetButtons: HTMLButtonElement[]
     #swatches: HTMLElement
@@ -69,6 +81,7 @@ export class MarkerPanel {
                 <button type="button" class="marker-panel__close" data-action="close" title="关闭（Esc）">×</button>
             </header>
             <div class="marker-panel__view" data-role="view">
+                <p class="marker-panel__submap" data-role="submap-hint" hidden></p>
                 <div class="marker-panel__info md" data-role="info"></div>
             </div>
             <div class="marker-panel__form" data-role="form" hidden>
@@ -103,6 +116,11 @@ export class MarkerPanel {
                     </div>
                     <p class="field__hint">0 = 始终显示；数字越大，越晚出现。</p>
                 </div>
+                <div class="field">
+                    <span class="field__label">子地图</span>
+                    <select class="field__input" data-field="submap"></select>
+                    <p class="field__hint">选一张子地图后，这个标签就能右键「进入此地图」。图片放在 maps/sub/ 下。</p>
+                </div>
                 <label class="field field--grow">
                     <span class="field__label">信息（Markdown）</span>
                     <textarea class="field__input field__textarea" rows="7" data-field="markdown"
@@ -115,7 +133,11 @@ export class MarkerPanel {
             </div>
             <footer class="marker-panel__foot">
                 <span class="marker-panel__status" data-role="status"></span>
-                <div class="marker-panel__actions" data-role="actions">
+                <div class="marker-panel__actions" data-role="actions-view">
+                    <button type="button" class="btn" data-action="preview" hidden>浮窗</button>
+                    <button type="button" class="btn btn--primary" data-action="enter" hidden>进入</button>
+                </div>
+                <div class="marker-panel__actions" data-role="actions-edit" hidden>
                     <button type="button" class="btn" data-action="locate">定位</button>
                     <button type="button" class="btn btn--danger" data-action="delete">删除</button>
                     <button type="button" class="btn btn--primary" data-action="done">完成</button>
@@ -136,22 +158,27 @@ export class MarkerPanel {
         this.#info = pick('info')
         this.#status = pick('status')
         this.#list = pick('list')
-        this.#footActions = pick('actions')
+        this.#count = pick('count')
+        this.#actionsView = pick('actions-view')
+        this.#actionsEdit = pick('actions-edit')
+        this.#submapHint = pick('submap-hint')
+        this.#enterButton = this.element.querySelector<HTMLButtonElement>('[data-action="enter"]')!
+        this.#previewButton = this.element.querySelector<HTMLButtonElement>('[data-action="preview"]')!
         this.#titleInput = this.element.querySelector<HTMLInputElement>('[data-field="title"]')!
         this.#colorInput = this.element.querySelector<HTMLInputElement>('[data-field="color"]')!
         this.#minScaleInput = this.element.querySelector<HTMLInputElement>('[data-field="minScale"]')!
         this.#markdownInput = this.element.querySelector<HTMLTextAreaElement>('[data-field="markdown"]')!
+        this.#submapSelect = this.element.querySelector<HTMLSelectElement>('[data-field="submap"]')!
         this.#typeButtons = [...this.element.querySelectorAll<HTMLButtonElement>('[data-role="types"] [data-type]')]
         this.#presetButtons = [...this.element.querySelectorAll<HTMLButtonElement>('[data-role="presets"] [data-preset]')]
         this.#swatches = pick('swatches')
-        this.#count = pick('count')
         this.#tipTitle = this.tooltip.querySelector('.marker-tip__title')!
         this.#tipBody = this.tooltip.querySelector('.marker-tip__body')!
 
         this.#bindEvents()
     }
 
-    #count: HTMLElement
+    #submapHint: HTMLElement
 
     // ------------------------------------------------------------ 对外
 
@@ -163,7 +190,9 @@ export class MarkerPanel {
         if (this.#mode === 'edit' && this.#marker?.id === marker.id) return
         const plain = markdownToPlain(marker.markdown)
         this.#tipTitle.textContent = marker.title || '未命名'
-        this.#tipBody.textContent = plain ? (plain.length > 90 ? `${plain.slice(0, 90)}…` : plain) : '（没有填写信息）'
+        const submapHint = marker.submap ? `⤵ 子地图：${nameOfKey(marker.submap)}　` : ''
+        const body = plain ? (plain.length > 90 ? `${plain.slice(0, 90)}…` : plain) : '（没有填写信息）'
+        this.#tipBody.textContent = `${submapHint}${body}`
         this.tooltip.hidden = false
 
         const { width, height } = this.tooltip.getBoundingClientRect()
@@ -187,12 +216,20 @@ export class MarkerPanel {
         this.element.dataset.mode = 'info'
         this.#view.hidden = false
         this.#form.hidden = true
-        this.#footActions.hidden = true
+        this.#actionsView.hidden = false
+        this.#actionsEdit.hidden = true
         this.#badge.textContent = marker.type === 'star' ? '★ 地标' : '纯文字'
         this.#title.textContent = marker.title || '未命名'
         this.#info.innerHTML = marker.markdown.trim()
             ? renderMarkdown(marker.markdown)
             : '<p class="md__empty">这个标签还没有填写信息。打开编辑模式后可以补充。</p>'
+
+        const hasSubmap = Boolean(marker.submap)
+        this.#submapHint.hidden = !hasSubmap
+        if (hasSubmap) this.#submapHint.textContent = `⤵ 子地图：${nameOfKey(marker.submap)}`
+        this.#enterButton.hidden = !hasSubmap
+        this.#previewButton.hidden = !hasSubmap
+        if (hasSubmap) this.#enterButton.textContent = `进入 ${nameOfKey(marker.submap)}`
         this.hideTooltip()
     }
 
@@ -204,7 +241,8 @@ export class MarkerPanel {
         this.element.dataset.mode = 'edit'
         this.#view.hidden = true
         this.#form.hidden = false
-        this.#footActions.hidden = false
+        this.#actionsView.hidden = true
+        this.#actionsEdit.hidden = false
         this.#badge.textContent = '编辑标签'
         this.#title.textContent = marker.title || '新标记'
 
@@ -212,10 +250,31 @@ export class MarkerPanel {
         this.#colorInput.value = this.#normalizeColor(marker.color)
         this.#minScaleInput.value = String(marker.minScale || 0)
         this.#markdownInput.value = marker.markdown
+        this.#fillSubmapOptions(context.submaps, marker.submap)
         this.#syncTypeButtons(marker.type)
         this.#syncPresetButtons(marker.minScale)
         this.updateList(context.markers, context.selectedId)
         this.hideTooltip()
+    }
+
+    /** 编辑子地图选择框的选项 */
+    #fillSubmapOptions(submaps: MapNode[], selected: string) {
+        const options: Array<{ value: string; label: string }> = [
+            { value: '', label: '（无）' },
+            ...submaps.map((node) => ({ value: node.key, label: node.name })),
+        ]
+        // 选中的子地图不在清单里（比如文件被挪走）也要显示出来，避免静默丢失
+        if (selected && !options.some((option) => option.value === selected)) {
+            options.push({ value: selected, label: `${nameOfKey(selected)}（未在 maps/sub/ 中找到）` })
+        }
+        this.#submapSelect.textContent = ''
+        for (const option of options) {
+            const element = document.createElement('option')
+            element.value = option.value
+            element.textContent = option.label
+            this.#submapSelect.appendChild(element)
+        }
+        this.#submapSelect.value = selected
     }
 
     updateList(markers: MapMarker[], selectedId: string | null) {
@@ -242,7 +301,7 @@ export class MarkerPanel {
             name.textContent = marker.title || '未命名'
             const meta = document.createElement('span')
             meta.className = 'marker-list__meta'
-            meta.textContent = marker.minScale > 0 ? `≥${marker.minScale.toFixed(2)}` : '始终'
+            meta.textContent = marker.submap ? '⤵' : marker.minScale > 0 ? `≥${marker.minScale.toFixed(2)}` : '始终'
             item.append(dot, name, meta)
             item.addEventListener('click', () => this.#handlers.onSelect(marker.id))
             this.#list.appendChild(item)
@@ -316,6 +375,8 @@ export class MarkerPanel {
         this.element.querySelector('[data-action="locate"]')!.addEventListener('click', () => this.#handlers.onLocate())
         this.element.querySelector('[data-action="delete"]')!.addEventListener('click', () => this.#handlers.onDelete())
         this.element.querySelector('[data-action="done"]')!.addEventListener('click', () => this.#handlers.onClose())
+        this.#enterButton.addEventListener('click', () => this.#handlers.onEnter())
+        this.#previewButton.addEventListener('click', () => this.#handlers.onPreview())
 
         this.#titleInput.addEventListener('input', () => {
             const title = this.#titleInput.value
@@ -352,6 +413,10 @@ export class MarkerPanel {
 
         this.#markdownInput.addEventListener('input', () => {
             this.#handlers.onPatch({ markdown: this.#markdownInput.value })
+        })
+
+        this.#submapSelect.addEventListener('change', () => {
+            this.#handlers.onPatch({ submap: this.#submapSelect.value })
         })
 
         for (const color of COLOR_PRESETS) {
