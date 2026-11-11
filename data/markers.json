@@ -1,4 +1,18 @@
 {
   "version": 1,
-  "maps": {}
+  "maps": {
+    "吞食天地2.png": [
+      {
+        "id": "m_mwbhqblk6htp6",
+        "x": 4609.3,
+        "y": 88.4,
+        "type": "star",
+        "title": "张飞小城",
+        "color": "#ffd166",
+        "minScale": 0,
+        "markdown": "",
+        "submap": ""
+      }
+    ]
+  }
 }
