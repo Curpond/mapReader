@@ -12,6 +12,17 @@
         "minScale": 0,
         "markdown": "",
         "submap": ""
+      },
+      {
+        "id": "m_mwbi3n844ftzg",
+        "x": 2747.4,
+        "y": 1113,
+        "type": "star",
+        "title": "山洞",
+        "color": "#ffd166",
+        "minScale": 0,
+        "markdown": "",
+        "submap": "sub/山洞1.jpg"
       }
     ]
   }

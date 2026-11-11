@@ -9,5 +9,14 @@
       "file": "吞食天地2.png"
     }
   ],
-  "submaps": []
+  "submaps": [
+    {
+      "name": "山洞1",
+      "file": "sub/山洞1.jpg"
+    },
+    {
+      "name": "山洞2",
+      "file": "sub/山洞2.jpg"
+    }
+  ]
 }
