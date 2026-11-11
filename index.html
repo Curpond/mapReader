@@ -22,13 +22,15 @@
             <p class="loading__text">正在加载地图…</p>
         </div>
 
-        <div class="hint" id="hint">滚轮 / 双击缩放　·　拖动平移　·　0 键恢复全图</div>
+        <div class="hint" id="hint">滚轮 / 双击缩放　·　拖动平移　·　E 编辑标签　·　0 键恢复全图</div>
 
         <div class="toolbar">
             <button id="zoom-out" type="button" title="缩小（-）" aria-label="缩小">−</button>
             <span class="toolbar__zoom" id="zoom-label">--</span>
             <button id="zoom-in" type="button" title="放大（+）" aria-label="放大">+</button>
             <button id="zoom-fit" type="button" title="适应窗口（0）" aria-label="适应窗口">全图</button>
+            <span class="toolbar__divider" aria-hidden="true"></span>
+            <button id="marker-edit" type="button" class="toolbar__edit" title="编辑标签（E）" aria-label="编辑标签" aria-pressed="false">✎</button>
         </div>
     </main>
 

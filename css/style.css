@@ -248,3 +248,550 @@ body {
     font-size: 12px;
     font-variant-numeric: tabular-nums;
 }
+
+.toolbar__divider {
+    width: 1px;
+    height: 18px;
+    margin: 0 4px;
+    background: var(--line);
+}
+
+.toolbar button.is-active {
+    background: rgba(76, 141, 255, 0.28);
+    color: #dfe9ff;
+}
+
+/* ------------------------------------------------------------ 地图标签 */
+
+.marker-layer {
+    /* transform-origin / transform 由 JS 写入 */
+    --marker-inv: 1;
+}
+
+.marker {
+    position: absolute;
+    width: 0;
+    height: 0;
+    pointer-events: auto;
+}
+
+.marker.is-hidden {
+    display: none;
+}
+
+/*
+ * 反向缩放的关键：
+ *   覆盖层被放大 scale 倍，这里再缩小 1/scale，两者相乘等于 1，
+ *   所以文字和图标在屏幕上始终是同一大小。
+ * transform-origin 设为左上角，配合 translate(0, -50%)，
+ * 让标签左侧中线正好贴住地物坐标点（transform 里 scale 在左、translate 在右，
+ * 位移才会落在「反向缩放后」的空间里，换算成屏幕像素才是常数）。
+ */
+.marker__body {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    transform-origin: 0 0;
+    transform: scale(var(--marker-inv, 1)) translate(0, -50%);
+    padding: 1px 7px 1px 3px;
+    border-radius: 5px;
+    background: rgba(12, 14, 17, 0.72);
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    color: var(--marker-color, #ffd166);
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    cursor: pointer;
+    transition: box-shadow 0.12s ease, background 0.12s ease;
+}
+
+/* 五角星形态：把图标中心对准地物点（图标宽 18px，所以左移 9px） */
+.marker[data-type="star"] .marker__body {
+    transform: scale(var(--marker-inv, 1)) translate(-9px, -50%);
+    padding-left: 0;
+}
+
+.marker__icon {
+    font-size: 18px;
+    line-height: 18px;
+    width: 18px;
+    height: 18px;
+    display: block;
+    text-align: center;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85));
+}
+
+/* 纯文字形态：不要图标，只留文字，底色淡一些 */
+.marker[data-type="label"] .marker__body {
+    background: rgba(12, 14, 17, 0.5);
+    font-weight: 600;
+    padding-left: 7px;
+}
+
+.marker__title {
+    color: #fff;
+    font-size: 13px;
+}
+
+.marker[data-type="label"] .marker__title {
+    color: var(--marker-color, #ffd166);
+}
+
+.marker__body:hover,
+.marker.is-selected .marker__body {
+    background: rgba(12, 14, 17, 0.9);
+    box-shadow: 0 0 0 2px var(--marker-color, #ffd166);
+}
+
+.marker-layer.is-editable .marker__body {
+    cursor: grab;
+}
+
+.marker-layer.is-editable .marker__body:active {
+    cursor: grabbing;
+}
+
+/* ------------------------------------------------------------ 悬停预览 */
+
+.marker-tip {
+    position: fixed;
+    z-index: 30;
+    max-width: 260px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(20, 22, 26, 0.96);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.5;
+    pointer-events: none;
+}
+
+.marker-tip[hidden] {
+    display: none;
+}
+
+.marker-tip__title {
+    margin-bottom: 3px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.marker-tip__body {
+    color: var(--text-dim);
+    word-break: break-word;
+}
+
+/* ------------------------------------------------------------ 信息 / 编辑面板 */
+
+.marker-panel {
+    position: fixed;
+    top: 72px;
+    right: 16px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    width: 328px;
+    max-height: calc(100vh - 148px);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+    color: var(--text);
+}
+
+.marker-panel[hidden] {
+    display: none;
+}
+
+.marker-panel__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 10px 10px 14px;
+    border-bottom: 1px solid var(--line);
+}
+
+.marker-panel__badge {
+    flex: none;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(76, 141, 255, 0.2);
+    color: #bcd4ff;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+}
+
+.marker-panel__title {
+    flex: 1;
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.marker-panel__close {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.marker-panel__close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text);
+}
+
+.marker-panel__view,
+.marker-panel__form {
+    overflow-y: auto;
+    padding: 12px 14px;
+}
+
+.marker-panel__form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.marker-panel__foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px 8px 14px;
+    border-top: 1px solid var(--line);
+}
+
+.marker-panel__status {
+    flex: 1;
+    overflow: hidden;
+    color: var(--text-dim);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.marker-panel[data-status="error"] .marker-panel__status {
+    color: #ff8a80;
+}
+
+.marker-panel__actions {
+    display: flex;
+    gap: 6px;
+}
+
+.marker-panel__actions[hidden] {
+    display: none;
+}
+
+/* 表单控件 */
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field__label {
+    color: var(--text-dim);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+}
+
+.field__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.field__row--tight {
+    gap: 6px;
+}
+
+.field__input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+}
+
+.field__input:focus-visible {
+    outline: 2px solid #4c8dff;
+    outline-offset: 1px;
+}
+
+.field__input--num {
+    width: 84px;
+}
+
+.field__textarea {
+    min-height: 96px;
+    resize: vertical;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.field__color {
+    flex: none;
+    width: 34px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.field__hint {
+    color: var(--text-dim);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.swatch {
+    width: 20px;
+    height: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.swatch:hover {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45);
+}
+
+.seg {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.seg__btn {
+    flex: 1;
+    padding: 5px 6px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-dim);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.seg__btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+}
+
+.seg__btn.is-active {
+    background: rgba(76, 141, 255, 0.3);
+    color: #e6efff;
+}
+
+.btn {
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.btn--primary {
+    border-color: rgba(76, 141, 255, 0.55);
+    background: rgba(76, 141, 255, 0.28);
+}
+
+.btn--danger:hover {
+    background: rgba(255, 107, 107, 0.24);
+    border-color: rgba(255, 107, 107, 0.5);
+}
+
+/* 标签列表 */
+
+.marker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 168px;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.marker-list__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 7px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.marker-list__item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.marker-list__item.is-active {
+    background: rgba(76, 141, 255, 0.26);
+}
+
+.marker-list__dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.marker-list__name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.marker-list__meta {
+    flex: none;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------ Markdown 渲染 */
+
+.md {
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.7;
+    word-break: break-word;
+}
+
+.md > * + * {
+    margin-top: 8px;
+}
+
+.md h1,
+.md h2,
+.md h3,
+.md h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.md h1 {
+    font-size: 16px;
+}
+
+.md h2 {
+    font-size: 15px;
+}
+
+.md p {
+    margin: 0;
+}
+
+.md a {
+    color: #7fb0ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.md ul,
+.md ol {
+    padding-left: 18px;
+}
+
+.md li + li {
+    margin-top: 2px;
+}
+
+.md code {
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.12);
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 12px;
+}
+
+.md blockquote {
+    padding-left: 10px;
+    border-left: 2px solid var(--line);
+    color: var(--text-dim);
+}
+
+.md hr {
+    border: 0;
+    border-top: 1px solid var(--line);
+}
+
+.md table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.md th,
+.md td {
+    padding: 4px 8px;
+    border: 1px solid var(--line);
+    text-align: left;
+}
+
+.md th {
+    background: rgba(255, 255, 255, 0.06);
+    font-weight: 600;
+}
+
+.md__empty {
+    color: var(--text-dim);
+}
+
+/* 编辑模式下给视口一点提示色 */
+body.is-editing .map-reader {
+    cursor: crosshair;
+}

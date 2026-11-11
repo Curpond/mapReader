@@ -346,6 +346,23 @@ export class MapReader {
         return { x: this.#x, y: this.#y, scale: this.#scale }
     }
 
+    /** 整图刚好铺满可视区域时的缩放倍数（「全图视角」的基准值） */
+    get fitScale() {
+        if (!this.#loaded) return 1
+        const cw = this.element.clientWidth || 1
+        const ch = this.element.clientHeight || 1
+        return Math.min(cw / this.#naturalWidth, ch / this.#naturalHeight)
+    }
+
+    /** 把图片上的某个像素点移到视口中心 */
+    centerOn(imageX: number, imageY: number) {
+        if (!this.#loaded) return
+        this.#x = this.element.clientWidth / 2 - imageX * this.#scale
+        this.#y = this.element.clientHeight / 2 - imageY * this.#scale
+        this.#constrain()
+        this.#apply()
+    }
+
     // ------------------------------------------------------------ 事件回调
 
     #onWheel = (e: WheelEvent) => {
